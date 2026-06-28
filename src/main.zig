@@ -3,6 +3,14 @@ const slick = @import("slick");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
+const SortCtx = struct {
+    const Self = @This();
+    camera: rl.Camera2D,
+    fn lessThan(ctx: Self, a: slick.StackEntity, b: slick.StackEntity) bool {
+        return a.sortY(ctx.camera) < b.sortY(ctx.camera);
+    }
+};
+
 pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
@@ -15,18 +23,44 @@ pub fn main(init: std.process.Init) !void {
     const image = try rl.Image.init("./assets/simple_s.png");
     for (0..16) |_| {
         const texture = try rl.Texture.fromImage(image);
-        try textures.append(arena.allocator(), texture);
+        try textures.append(allocator, texture);
         rl.setTextureFilter(texture, .point);
     }
-    var frame: f32 = 0;
+
+    const screen_center = rl.Vector2{ .x = 480, .y = 280 };
+    var camera = rl.Camera2D{
+        .offset = screen_center,
+        .target = .{ .x = 0, .y = 0 },
+        .rotation = 0,
+        .zoom = 1,
+    };
+
+    var entities: std.ArrayList(slick.StackEntity) = .empty;
+
+    var object_rotation: f32 = 0;
+    const stack_entity = slick.StackEntity.init(0, 0, object_rotation, textures.items);
+    const stack_entity2 = slick.StackEntity.init(32, 0, object_rotation, textures.items);
+    try entities.append(allocator, stack_entity);
+    try entities.append(allocator, stack_entity2);
 
     while (!rl.windowShouldClose()) {
-        frame += 1;
+        const speed = 2.0;
+        if (rl.isKeyDown(.w)) camera.target.y += speed;
+        if (rl.isKeyDown(.s)) camera.target.y -= speed;
+        if (rl.isKeyDown(.a)) camera.target.x += speed;
+        if (rl.isKeyDown(.d)) camera.target.x -= speed;
+        if (rl.isKeyDown(.q)) camera.rotation += speed;
+        if (rl.isKeyDown(.e)) camera.rotation -= speed;
+        if (rl.isKeyDown(.z)) object_rotation += speed;
+        if (rl.isKeyDown(.x)) object_rotation -= speed;
         rl.beginDrawing();
         defer rl.endDrawing();
-        rl.clearBackground(rl.Color.ray_white);
-        const texture_r = slick.SpriteStack{ .rotation = frame, .scale = 2, .textures = textures.items };
-        texture_r.render(480, 280);
+        rl.clearBackground(rl.Color.init(128, 128, 128, 255));
+
+        std.mem.sort(slick.StackEntity, entities.items, SortCtx{ .camera = camera }, SortCtx.lessThan);
+        for (entities.items) |entity| {
+            entity.render(camera, object_rotation); // there's has to be a better way than passing object_rotation to every render call
+        }
     }
 
     rl.closeWindow();
