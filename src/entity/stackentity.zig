@@ -20,7 +20,7 @@ pub fn init(x: f32, y: f32, rotation: f32, textures: []rl.Texture) StackEntity {
 pub fn render(self: StackEntity, camera: rl.Camera2D, rotation: f32) void {
     const position = rl.getWorldToScreen2D(self.position, camera);
 
-    _ = self.stack.render(position.x, position.y, -(rotation - camera.rotation));
+    _ = self.stack.render(position.x, position.y, -(rotation - camera.rotation), camera.zoom);
 }
 
 pub fn sortY(self: StackEntity, camera: rl.Camera2D) f32 {
