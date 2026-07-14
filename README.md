@@ -1,4 +1,5 @@
-slick is a multiplayer twin-stick inspired arena racing game.
+slick is a multiplayer twin-stick inspired arena rally game.
+rallies are carried out with tanks battling on a grid.
 
 tasks
 
