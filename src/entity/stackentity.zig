@@ -7,6 +7,7 @@ const StackEntity = @This();
 position: rl.Vector2,
 rotation: f32,
 stack: SpriteStack,
+controlled: bool = false,
 
 pub fn init(x: f32, y: f32, rotation: f32, textures: []rl.Texture) StackEntity {
     return StackEntity{
