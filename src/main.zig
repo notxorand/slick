@@ -15,6 +15,7 @@ pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
     rl.initWindow(1280, 720, "slick");
+    defer rl.closeWindow();
     rl.setTargetFPS(60);
     rl.hideCursor();
 
@@ -28,15 +29,24 @@ pub fn main(init: std.process.Init) !void {
         rl.setTextureFilter(texture, .point);
     }
 
-    var textures2 = try loadTexturesFromFolder(allocator, init.io, "./assets/sprites/car");
+    var textures2 = try loadTexturesFromFolder(allocator, init.io, "./assets/sprites/car2");
     defer textures2.deinit(allocator);
+
+    var textures_hud = try loadTexturesFromFolder(allocator, init.io, "./assets/sprites/hud");
+    defer textures_hud.deinit(allocator);
+
     // const scanlines_shader = try rl.loadShader(null, "assets/shaders/scanlines.fs");
     // defer rl.unloadShader(scanlines_shader);
 
     // Get shader uniform location
     // const time_loc = rl.getShaderLocation(scanlines_shader, "time");
 
-    const screen_center = rl.Vector2{ .x = 640, .y = 360 };
+    const internal_width = 1280;
+    const internal_height = 720;
+    var target = try rl.loadRenderTexture(internal_width, internal_height);
+    defer target.unload();
+    rl.setTextureFilter(target.texture, .point);
+    const screen_center = rl.Vector2{ .x = internal_width / 2.0, .y = internal_height / 2.0 };
     var control_position = rl.Vector2{ .x = 32, .y = 32 };
     var camera = rl.Camera2D{
         .offset = screen_center,
@@ -73,6 +83,7 @@ pub fn main(init: std.process.Init) !void {
     try entities.append(allocator, &controlled_entity);
 
     while (!rl.windowShouldClose()) {
+        if (rl.isKeyPressed(.f11)) rl.toggleFullscreen();
         const speed = 4.0;
 
         const camera_rad = camera.rotation * (std.math.pi / 180.0);
@@ -122,12 +133,14 @@ pub fn main(init: std.process.Init) !void {
         }
 
         // Pan Camera with Right Stick (or QE)
-        if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) camera.rotation += speed;
-        if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) camera.rotation -= speed;
+        if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) camera.rotation += 2;
+        if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) camera.rotation -= 2;
 
         {
             camera.target.x = control_position.x;
             camera.target.y = control_position.y;
+            // camera.offset.x = control_position.x - camera.target.x;
+            // camera.offset.y = control_position.y - camera.target.y;
             for (entities.items) |entity| {
                 if (entity.controlled) {
                     const dx = control_position.x - entity.position.x;
@@ -169,33 +182,51 @@ pub fn main(init: std.process.Init) !void {
 
         rl.beginDrawing();
         defer rl.endDrawing();
-        rl.clearBackground(rl.Color.init(128, 128, 128, 255));
-        // rl.beginShaderMode(scanlines_shader);
-        // defer rl.endShaderMode();
-        rl.beginMode2D(camera);
-        // rl.drawTexturePro(
-        //     texture,
-        //     .{ .x = 0, .y = 0, .width = @floatFromInt(texture.width), .height = @floatFromInt(texture.height) },
-        //     .{ .x = control_position.x, .y = control_position.y, .width = @as(f32, @floatFromInt(texture.width)), .height = @as(f32, @floatFromInt(texture.height)) },
-        //     .{ .x = @as(f32, @floatFromInt(texture.width)), .y = @as(f32, @floatFromInt(texture.height)) },
-        //     -camera.rotation,
-        //     rl.Color.white,
-        // );
-        rl.endMode2D();
 
-        // TODO: sort billboard sprites as well
+        rl.beginTextureMode(target);
+        rl.clearBackground(rl.Color.init(128, 128, 128, 255));
+
+        // Sort using world Y coordinate
         std.mem.sort(*slick.StackEntity, entities.items, SortCtx{ .camera = camera }, SortCtx.lessThan);
+
+        // there's has to be a better way than passing object_rotation to every render call
         for (entities.items) |entity| {
-            // there's has to be a better way than passing object_rotation to every render call
-            if (entity.controlled) {
-                entity.render(camera, object_rotation);
-            } else {
-                entity.render(camera, 0);
+            const screen_pos = rl.getWorldToScreen2D(entity.position, camera);
+
+            // culling: don't render if outside the screen bounds
+            if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
+                screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height)
+            {
+                if (entity.controlled) {
+                    entity.render(camera, object_rotation);
+                } else {
+                    entity.render(camera, 0);
+                }
             }
         }
-    }
+        renderHealth(textures_hud.items, 6, 4);
+        rl.endTextureMode();
 
-    rl.closeWindow();
+        rl.clearBackground(rl.Color.black);
+        const screen_w = @as(f32, @floatFromInt(rl.getScreenWidth()));
+        const screen_h = @as(f32, @floatFromInt(rl.getScreenHeight()));
+        const scale = @min(screen_w / internal_width, screen_h / internal_height);
+        const dest_rect = rl.Rectangle{
+            .x = (screen_w - (internal_width * scale)) / 2,
+            .y = (screen_h - (internal_height * scale)) / 2,
+            .width = internal_width * scale,
+            .height = internal_height * scale,
+        };
+
+        rl.drawTexturePro(
+            target.texture,
+            .{ .x = 0, .y = 0, .width = internal_width, .height = -internal_height },
+            dest_rect,
+            .{ .x = 0, .y = 0 },
+            0,
+            rl.Color.white,
+        );
+    }
 }
 
 fn loadTexturesFromFolder(allocator: std.mem.Allocator, io: std.Io, path: []const u8) !std.ArrayList(rl.Texture2D) {
@@ -280,4 +311,13 @@ fn sortFileNameById(image_paths: *std.ArrayList([]const u8)) void {
             return id_a < id_b;
         }
     }.lessThan);
+}
+
+fn renderHealth(textures: []rl.Texture2D, total_health: u32, health: u32) void {
+    for (0..total_health) |i| {
+        textures[1].draw(1240 - @as(i32, @intCast(i)) * 14, 680, .white);
+    }
+    for (0..health) |i| {
+        textures[0].draw(1240 - @as(i32, @intCast(i)) * 14, 680, .white);
+    }
 }
