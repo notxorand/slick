@@ -3,14 +3,6 @@ const slick = @import("slick");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
-const SortCtx = struct {
-    const Self = @This();
-    camera: rl.Camera2D,
-    fn lessThan(ctx: Self, a: *slick.StackEntity, b: *slick.StackEntity) bool {
-        return a.sortY(ctx.camera) < b.sortY(ctx.camera);
-    }
-};
-
 pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
@@ -47,51 +39,31 @@ pub fn main(init: std.process.Init) !void {
     defer target.unload();
     rl.setTextureFilter(target.texture, .point);
     const screen_center = rl.Vector2{ .x = internal_width / 2.0, .y = internal_height / 2.0 };
-    const control_position = rl.Vector2{ .x = 32, .y = 32 };
-    var camera = rl.Camera2D{
-        .offset = screen_center,
-        .target = control_position,
-        .rotation = 0,
-        .zoom = 1,
-    };
+    var camera = slick.Camera.init(screen_center);
     // const texture = textures.items[0];
 
     var entities: std.ArrayList(*slick.StackEntity) = .empty;
-    // Calibrate/Verify gamepad
-    var active_gamepad: i32 = -1;
-    for (0..4) |i| {
-        if (rl.isGamepadAvailable(@intCast(i))) {
-            const name = rl.getGamepadName(@intCast(i));
-            // Filter out the touchpad (SYNA) to find the actual wireless controller
-            // This affected my machine (Linux), displaying my mouse as a controller
-            if (std.mem.indexOf(u8, name, "SYNA") == null) {
-                active_gamepad = @intCast(i);
-                std.debug.print("Gamepad {d} detected: {s}\n", .{ i, name });
-                break;
-            }
-        }
-    }
+    var players: std.ArrayList(*slick.Player) = .empty;
 
     const object_rotation: f32 = 0.0;
-    var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items, &camera, false);
-    var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items, &camera, false);
-    var controlled_entity = slick.StackEntity.init(32, 32, object_rotation, textures2.items, &camera, true);
-    controlled_entity.control.setActiveGamepad(active_gamepad);
-    controlled_entity.control.position = control_position;
+    var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items, &camera);
+    var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items, &camera);
+    var player1 = slick.Player.init(0, 32, 32, object_rotation, textures2.items, &camera);
+    player1.setLocal(true);
+    player1.setActiveGamepad();
+
+    try players.append(allocator, &player1);
     try entities.append(allocator, &stack_entity);
     try entities.append(allocator, &stack_entity2);
-    try entities.append(allocator, &controlled_entity);
+    try entities.append(allocator, &player1.stack_entity);
+    for (players.items) |player| if (player.stack_entity.is_local) camera.setTarget(&player.stack_entity.position);
 
     while (!rl.windowShouldClose()) {
         if (rl.isKeyPressed(.f11)) rl.toggleFullscreen();
 
-        {
-            // camera.offset.x = control_position.x - camera.target.x;
-            // camera.offset.y = control_position.y - camera.target.y;
-            for (entities.items) |entity| {
-                entity.handlePhysics();
-            }
-        }
+        for (entities.items) |entity| entity.handlePhysics();
+        camera.update(rl.getFrameTime());
+
         // kept so we know we can do this
         // if (rl.isKeyDown(.z)) object_rotation -= speed;
         // if (rl.isKeyDown(.x)) object_rotation += speed;
@@ -106,18 +78,19 @@ pub fn main(init: std.process.Init) !void {
         rl.clearBackground(rl.Color.init(128, 128, 128, 255));
 
         // Sort using world Y coordinate
-        std.mem.sort(*slick.StackEntity, entities.items, SortCtx{ .camera = camera }, SortCtx.lessThan);
+        std.mem.sort(*slick.StackEntity, entities.items, {}, struct {
+            fn lessThan(_: void, a: *slick.StackEntity, b: *slick.StackEntity) bool {
+                return a.sortY() < b.sortY();
+            }
+        }.lessThan);
 
         // there's has to be a better way than passing object_rotation to every render call
         for (entities.items) |entity| {
-            const screen_pos = rl.getWorldToScreen2D(entity.position, camera);
+            const screen_pos = rl.getWorldToScreen2D(entity.position, entity.camera.camera);
 
             // culling: don't render if outside the screen bounds
             if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
-                screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height)
-            {
-                entity.render(camera);
-            }
+                screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height) entity.render();
         }
         renderHealth(textures_hud.items, 6, 4);
         rl.endTextureMode();

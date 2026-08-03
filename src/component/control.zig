@@ -76,7 +76,4 @@ pub fn handle(self: *Control) void {
     // Pan Camera with Right Stick (or QE)
     if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) self.camera.*.rotation += 2;
     if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) self.camera.*.rotation -= 2;
-
-    self.camera.*.target.x = self.position.x;
-    self.camera.*.target.y = self.position.y;
 }
