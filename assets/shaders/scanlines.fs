@@ -46,13 +46,10 @@ void main()
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
 
-    // Color examples - change the vec4 values (R, G, B, A):
-    // Green CRT: vec4(0.0, 0.3, 0.0, 0.0)
-    // Blue CRT: vec4(0.0, 0.1, 0.4, 0.0)
-    // Amber CRT: vec4(0.4, 0.3, 0.0, 0.0)
-    // Red CRT: vec4(0.3, 0.0, 0.0, 0.0)
-    // Purple CRT: vec4(0.2, 0.0, 0.3, 0.0)
-    // White/grayscale: vec4(0.2, 0.2, 0.2, 0.0)
+    // Create subtle scanlines
+    // Multiply original color by the scanline factor instead of mixing with a tint
+    float scanline = sin(fragTexCoord.y * 1000.0 + time * 5.0);
+    scanline = (scanline * 0.05) + 0.95;
 
-    finalColor = mix(vec4(0.4, 0.4, 0.3, 0.0), texelColor, wavePos);
+    finalColor = texelColor * vec4(vec3(scanline), 1.0);
 }

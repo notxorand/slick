@@ -7,12 +7,22 @@ const slick = @import("slick");
 pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
     defer arena.deinit();
-    rl.initWindow(1280, 720, "slick");
+
+    const allocator = arena.allocator();
+
+    var settings = slick.Settings{
+        .allocator = allocator,
+        .io = init.io,
+    };
+    try settings.load();
+
+    rl.setConfigFlags(.{ .window_resizable = settings.settings.window_resizable, .fullscreen_mode = settings.settings.fullscreen });
+    rl.initWindow(settings.settings.window_width, settings.settings.window_height, "slick");
+    rl.setExitKey(.null);
     defer rl.closeWindow();
     rl.setTargetFPS(60);
     rl.hideCursor();
 
-    const allocator = arena.allocator();
     var textures = try std.ArrayList(rl.Texture2D).initCapacity(allocator, 16);
 
     const image = try rl.Image.init("./assets/simple_s.png");
@@ -28,11 +38,11 @@ pub fn main(init: std.process.Init) !void {
     var textures_hud = try loadTexturesFromFolder(allocator, init.io, "./assets/sprites/hud");
     defer textures_hud.deinit(allocator);
 
-    // const scanlines_shader = try rl.loadShader(null, "assets/shaders/scanlines.fs");
-    // defer rl.unloadShader(scanlines_shader);
+    const scanlines_shader = try rl.loadShader(null, "assets/shaders/scanlines.fs");
+    defer rl.unloadShader(scanlines_shader);
 
     // Get shader uniform location
-    // const time_loc = rl.getShaderLocation(scanlines_shader, "time");
+    const time_loc = rl.getShaderLocation(scanlines_shader, "time");
 
     const internal_width = 1280;
     const internal_height = 720;
@@ -60,7 +70,15 @@ pub fn main(init: std.process.Init) !void {
     for (players.items) |player| if (player.stack_entity.is_local) camera.setTarget(&player.stack_entity.position);
 
     while (!rl.windowShouldClose()) {
-        if (rl.isKeyPressed(.f11)) rl.toggleFullscreen();
+        if (rl.isKeyPressed(.f11)) {
+            rl.toggleFullscreen();
+            settings.settings.fullscreen = !settings.settings.fullscreen;
+            try settings.save();
+        }
+        if (rl.isKeyPressed(.f1)) {
+            settings.settings.crt_enabled = !settings.settings.crt_enabled;
+            try settings.save();
+        }
 
         for (entities.items) |entity| entity.handlePhysics();
         camera.update(rl.getFrameTime());
@@ -69,8 +87,8 @@ pub fn main(init: std.process.Init) !void {
         // if (rl.isKeyDown(.z)) object_rotation -= speed;
         // if (rl.isKeyDown(.x)) object_rotation += speed;
 
-        // const time_value = rl.getTime();
-        // rl.setShaderValue(scanlines_shader, time_loc, &time_value, .float);
+        const time_value = rl.getTime();
+        rl.setShaderValue(scanlines_shader, time_loc, &time_value, .float);
 
         rl.beginDrawing();
         defer rl.endDrawing();
@@ -107,6 +125,7 @@ pub fn main(init: std.process.Init) !void {
             .height = internal_height * scale,
         };
 
+        if (settings.settings.crt_enabled) rl.beginShaderMode(scanlines_shader);
         rl.drawTexturePro(
             target.texture,
             .{ .x = 0, .y = 0, .width = internal_width, .height = -internal_height },
@@ -115,7 +134,9 @@ pub fn main(init: std.process.Init) !void {
             0,
             rl.Color.white,
         );
+        if (settings.settings.crt_enabled) rl.endShaderMode();
     }
+    try settings.save();
 }
 
 fn loadTexturesFromFolder(allocator: std.mem.Allocator, io: std.Io, path: []const u8) !std.ArrayList(rl.Texture2D) {
