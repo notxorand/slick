@@ -7,7 +7,7 @@ pub const EasingType = enum { linear, ease_in, ease_out };
 
 camera: rl.Camera2D,
 track: *rl.Vector2,
-lerp_factor: f32 = 0.15,
+lerp_factor: f32 = 0.25,
 easing: EasingType = .linear,
 
 pub fn init(screen_center: rl.Vector2) Camera {

@@ -2,8 +2,8 @@ const std = @import("std");
 
 const rl = @import("raylib");
 
-const StackEntity = @import("../entity/stackentity.zig");
 const Camera = @import("../camera.zig");
+const StackEntity = @import("../entity/stackentity.zig");
 
 stack_entity: StackEntity,
 id: u32,

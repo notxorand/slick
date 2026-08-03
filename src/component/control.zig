@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const rl = @import("raylib");
 
 const Control = @This();
@@ -74,6 +75,6 @@ pub fn handle(self: *Control) void {
     }
 
     // Pan Camera with Right Stick (or QE)
-    if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) self.camera.*.rotation += 2;
-    if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) self.camera.*.rotation -= 2;
+    if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) self.camera.*.rotation += 1.5;
+    if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) self.camera.*.rotation -= 1.5;
 }

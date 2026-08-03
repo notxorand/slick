@@ -1,9 +1,11 @@
 const std = @import("std");
+
 const rl = @import("raylib");
-const SpriteStack = @import("../component/spritestack.zig");
-const FloorZ = @import("../component/physics/floorz.zig");
-const Control = @import("../component/control.zig");
+
 const Camera = @import("../camera.zig");
+const Control = @import("../component/control.zig");
+const FloorZ = @import("../component/physics/floorz.zig");
+const SpriteStack = @import("../component/spritestack.zig");
 
 const StackEntity = @This();
 

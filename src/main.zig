@@ -1,7 +1,8 @@
 const std = @import("std");
-const slick = @import("slick");
-const rl = @import("raylib");
+
 const rg = @import("raygui");
+const rl = @import("raylib");
+const slick = @import("slick");
 
 pub fn main(init: std.process.Init) !void {
     var arena = std.heap.ArenaAllocator.init(init.gpa);
@@ -47,7 +48,7 @@ pub fn main(init: std.process.Init) !void {
 
     const object_rotation: f32 = 0.0;
     var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items, &camera);
-    var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items, &camera);
+    var stack_entity2 = slick.StackEntity.init(30, 0, 0, textures.items, &camera);
     var player1 = slick.Player.init(0, 32, 32, object_rotation, textures2.items, &camera);
     player1.setLocal(true);
     player1.setActiveGamepad();
