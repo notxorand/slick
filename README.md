@@ -3,9 +3,9 @@ rallies are carried out with trucks battling on a grid.
 
 tasks
 
-+ [ ] separate control logic into ECS
-+ [ ] design physics engine
++ [x] separate control logic into ECS
++ [ ] design physics engine (WIP)
 + [ ] draw sprites for main control body
-+ [ ] design hud system
++ [ ] design hud system (WIP)
 + [ ] map out settings config
 + [ ] set up menus and settings
