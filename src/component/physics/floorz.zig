@@ -2,7 +2,7 @@ const std = @import("std");
 
 const FloorZ = @This();
 
-current_friction: f32 = 0.85,
+slip: f32 = 0.89, // inverse of friction. between 0 & 1
 angular_velocity: f32 = 0.0,
 angular_acceleration: f32 = 0.01,
 
@@ -19,7 +19,7 @@ pub fn calculateRotation(self: *FloorZ, dx: f32, dy: f32, object_rotation: *f32)
         self.angular_velocity += (diff * self.angular_acceleration);
 
         // 3. Apply friction
-        self.angular_velocity *= self.current_friction;
+        self.angular_velocity *= self.slip;
 
         // 4. Apply to rotation
         object_rotation.* += self.angular_velocity;
