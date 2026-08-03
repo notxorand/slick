@@ -47,7 +47,7 @@ pub fn main(init: std.process.Init) !void {
     defer target.unload();
     rl.setTextureFilter(target.texture, .point);
     const screen_center = rl.Vector2{ .x = internal_width / 2.0, .y = internal_height / 2.0 };
-    var control_position = rl.Vector2{ .x = 32, .y = 32 };
+    const control_position = rl.Vector2{ .x = 32, .y = 32 };
     var camera = rl.Camera2D{
         .offset = screen_center,
         .target = control_position,
@@ -73,77 +73,23 @@ pub fn main(init: std.process.Init) !void {
     }
 
     const object_rotation: f32 = 0.0;
-    var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items);
-    var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items);
-    var controlled_entity = slick.StackEntity.init(32, 32, object_rotation, textures2.items);
-    controlled_entity.controlled = true;
+    var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items, &camera, false);
+    var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items, &camera, false);
+    var controlled_entity = slick.StackEntity.init(32, 32, object_rotation, textures2.items, &camera, true);
+    controlled_entity.control.setActiveGamepad(active_gamepad);
+    controlled_entity.control.position = control_position;
     try entities.append(allocator, &stack_entity);
     try entities.append(allocator, &stack_entity2);
     try entities.append(allocator, &controlled_entity);
 
     while (!rl.windowShouldClose()) {
         if (rl.isKeyPressed(.f11)) rl.toggleFullscreen();
-        const speed = 4.0;
-
-        const camera_rad = camera.rotation * (std.math.pi / 180.0);
-        const cos_a = @cos(camera_rad);
-        const sin_a = @sin(camera_rad);
-        const forward = rl.Vector2{
-            .x = -sin_a,
-            .y = -cos_a,
-        };
-
-        const right = rl.Vector2{
-            .x = cos_a,
-            .y = -sin_a,
-        };
-
-        const gamepad_left_x = if (active_gamepad != -1) rl.getGamepadAxisMovement(active_gamepad, .left_x) else 0;
-        const gamepad_left_y = if (active_gamepad != -1) rl.getGamepadAxisMovement(active_gamepad, .left_y) else 0;
-        const gamepad_right_x = if (active_gamepad != -1) rl.getGamepadAxisMovement(active_gamepad, .right_x) else 0;
-
-        const deadzone = 0.2;
-
-        const dpad_up = if (active_gamepad != -1) rl.isGamepadButtonDown(active_gamepad, .left_face_up) else false;
-        const dpad_down = if (active_gamepad != -1) rl.isGamepadButtonDown(active_gamepad, .left_face_down) else false;
-        const dpad_left = if (active_gamepad != -1) rl.isGamepadButtonDown(active_gamepad, .left_face_left) else false;
-        const dpad_right = if (active_gamepad != -1) rl.isGamepadButtonDown(active_gamepad, .left_face_right) else false;
-
-        // Calculate movement vector
-        var move_vec = rl.Vector2{ .x = 0, .y = 0 };
-
-        if (rl.isKeyDown(.w) or gamepad_left_y < -deadzone or dpad_up) move_vec.y += 1;
-        if (rl.isKeyDown(.s) or gamepad_left_y > deadzone or dpad_down) move_vec.y -= 1;
-        if (rl.isKeyDown(.a) or gamepad_left_x < -deadzone or dpad_left) move_vec.x -= 1;
-        if (rl.isKeyDown(.d) or gamepad_left_x > deadzone or dpad_right) move_vec.x += 1;
-
-        // Normalize and apply speed
-        const length = @sqrt(move_vec.x * move_vec.x + move_vec.y * move_vec.y);
-        if (length > 0) {
-            move_vec.x /= length;
-            move_vec.y /= length;
-
-            // Rotate move_vec by camera angle
-            const final_move_x = (move_vec.x * right.x) + (move_vec.y * forward.x);
-            const final_move_y = (move_vec.x * right.y) + (move_vec.y * forward.y);
-
-            control_position.x += final_move_x * speed;
-            control_position.y += final_move_y * speed;
-        }
-
-        // Pan Camera with Right Stick (or QE)
-        if (rl.isKeyDown(.q) or gamepad_right_x < -deadzone) camera.rotation += 2;
-        if (rl.isKeyDown(.e) or gamepad_right_x > deadzone) camera.rotation -= 2;
 
         {
-            camera.target.x = control_position.x;
-            camera.target.y = control_position.y;
             // camera.offset.x = control_position.x - camera.target.x;
             // camera.offset.y = control_position.y - camera.target.y;
             for (entities.items) |entity| {
-                var entity_control_position = control_position;
-                if (!entity.controlled) entity_control_position = entity.position;
-                entity.handlePhysics(entity_control_position);
+                entity.handlePhysics();
             }
         }
         // kept so we know we can do this
