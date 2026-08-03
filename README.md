@@ -5,7 +5,7 @@ tasks
 
 + [x] separate control logic into ECS
 + [ ] design physics engine (WIP)
-+ [ ] draw sprites for main control body
++ [ ] design player sprites
 + [ ] design hud system (WIP)
-+ [ ] map out settings config
++ [x] map out settings config
 + [ ] set up menus and settings
