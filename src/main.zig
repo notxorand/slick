@@ -72,8 +72,7 @@ pub fn main(init: std.process.Init) !void {
         }
     }
 
-    var object_rotation: f32 = 0.0;
-    var angular_velocity: f32 = 0.0;
+    const object_rotation: f32 = 0.0;
     var stack_entity = slick.StackEntity.init(0, 0, 0, textures.items);
     var stack_entity2 = slick.StackEntity.init(32, 0, 0, textures.items);
     var controlled_entity = slick.StackEntity.init(32, 32, object_rotation, textures2.items);
@@ -142,35 +141,9 @@ pub fn main(init: std.process.Init) !void {
             // camera.offset.x = control_position.x - camera.target.x;
             // camera.offset.y = control_position.y - camera.target.y;
             for (entities.items) |entity| {
-                if (entity.controlled) {
-                    const dx = control_position.x - entity.position.x;
-                    const dy = control_position.y - entity.position.y;
-
-                    if (dx != 0 or dy != 0) {
-                        const target_angle = (std.math.atan2(dy, -dx) * 180.0 / std.math.pi) + 90.0;
-
-                        // Physics Constants
-                        const angular_acceleration = 0.01; // How hard it tries to turn
-                        const friction = 0.85; // How much it resists continuing to spin
-
-                        // 1. Calculate the shortest diff
-                        var diff = target_angle - object_rotation;
-                        while (diff > 180) diff -= 360;
-                        while (diff < -180) diff += 360;
-
-                        // 2. Apply torque (angular acceleration) based on direction
-                        angular_velocity += (diff * angular_acceleration);
-
-                        // 3. Apply friction
-                        angular_velocity *= friction;
-
-                        // 4. Apply to rotation
-                        object_rotation += angular_velocity;
-                    }
-
-                    entity.position.x = control_position.x;
-                    entity.position.y = control_position.y;
-                }
+                var entity_control_position = control_position;
+                if (!entity.controlled) entity_control_position = entity.position;
+                entity.handlePhysics(entity_control_position);
             }
         }
         // kept so we know we can do this
@@ -197,11 +170,7 @@ pub fn main(init: std.process.Init) !void {
             if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
                 screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height)
             {
-                if (entity.controlled) {
-                    entity.render(camera, object_rotation);
-                } else {
-                    entity.render(camera, 0);
-                }
+                entity.render(camera);
             }
         }
         renderHealth(textures_hud.items, 6, 4);
