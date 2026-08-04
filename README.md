@@ -5,7 +5,9 @@ tasks
 
 + [x] separate control logic into ECS
 + [ ] design physics engine (WIP)
++ [ ] set up networking
 + [ ] design player sprites
 + [ ] design hud system (WIP)
 + [x] map out settings config
 + [ ] set up menus and settings
++ [ ] design arenas and grid maps
