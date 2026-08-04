@@ -42,10 +42,10 @@ pub fn load(self: *Settings) !void {
 }
 
 pub fn save(self: *Settings) !void {
-    const file = std.Io.Dir.cwd().openFile(self.io, FILE_NAME, .{ .mode = .read_write }) catch |err| switch (err) {
-        std.Io.File.OpenError.FileNotFound => std.Io.Dir.cwd().createFile(self.io, FILE_NAME, .{ .read = true }) catch |create_err| return create_err,
-        else => return err,
-    };
+    // having a backup is always a good idea :)
+    try std.Io.Dir.cwd().copyFile(FILE_NAME, .cwd(), "settings.bak", self.io, .{});
+    // we create a new file here cause the file's buffer size might not align with the incoming data size from our serialisation which might leave artifacts
+    const file = try std.Io.Dir.cwd().createFile(self.io, FILE_NAME, .{});
     defer file.close(self.io);
 
     var writer = file.writer(self.io, &.{});

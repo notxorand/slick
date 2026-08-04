@@ -15,6 +15,7 @@ Cargo.lock
 *.tmp
 zig-watch*
 settings
+settings.bak
 
 # local env files
 .env
