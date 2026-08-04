@@ -7,6 +7,8 @@ const StackEntity = @import("../entity/stackentity.zig");
 
 stack_entity: StackEntity,
 id: u32,
+health: u32 = 8,
+max_health: u32 = 8,
 
 const Player = @This();
 

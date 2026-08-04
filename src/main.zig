@@ -111,7 +111,8 @@ pub fn main(init: std.process.Init) !void {
             if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
                 screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height) entity.render();
         }
-        renderHealth(textures_hud.items, 6, 4);
+
+        renderHealth(textures_hud.items, player1.max_health, player1.health);
         rl.endTextureMode();
 
         rl.clearBackground(rl.Color.black);
