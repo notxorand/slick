@@ -62,6 +62,7 @@ pub fn main(init: std.process.Init) !void {
     var player1 = slick.Player.init(0, 32, 32, object_rotation, textures2.items, &camera);
     player1.setLocal(true);
     const active_gamepad = player1.setActiveGamepad();
+    settings.controls.active_gamepad = active_gamepad;
 
     try players.append(allocator, &player1);
     try entities.append(allocator, &stack_entity);
@@ -69,7 +70,7 @@ pub fn main(init: std.process.Init) !void {
     try entities.append(allocator, &player1.stack_entity);
     for (players.items) |player| if (player.stack_entity.is_local) camera.setTarget(&player.stack_entity.position);
 
-    var game_mode: slick.Menu.GameMode = .PLAYING;
+    var gui = slick.Gui{};
 
     while (!rl.windowShouldClose()) {
         if (rl.isKeyPressed(.f11)) {
@@ -81,45 +82,45 @@ pub fn main(init: std.process.Init) !void {
             settings.settings.crt_enabled = !settings.settings.crt_enabled;
             try settings.save();
         }
-        if (rl.isKeyPressed(.escape) or (active_gamepad != -1 and rl.isGamepadButtonPressed(active_gamepad, .middle_right)))
-            game_mode = if (game_mode == .PLAYING) .PAUSED else .PLAYING;
-
-        for (entities.items) |entity| entity.handlePhysics(game_mode);
-        camera.update(rl.getFrameTime());
-
-        // kept so we know we can do this
-        // if (rl.isKeyDown(.z)) object_rotation -= speed;
-        // if (rl.isKeyDown(.x)) object_rotation += speed;
-
-        const time_value = rl.getTime();
-        rl.setShaderValue(scanlines_shader, time_loc, &time_value, .float);
-
         rl.beginDrawing();
         defer rl.endDrawing();
 
         rl.beginTextureMode(target);
         rl.clearBackground(rl.Color.init(128, 128, 128, 255));
+        if (gui.mode == .MENU) {
+            gui.renderMenu(active_gamepad);
+        } else {
+            if (rl.isKeyPressed(.escape) or (active_gamepad != -1 and rl.isGamepadButtonPressed(active_gamepad, .middle_right)))
+                gui.mode = if (gui.mode == .PLAYING) .PAUSED else .PLAYING;
 
-        // Sort using world Y coordinate
-        std.mem.sort(*slick.StackEntity, entities.items, {}, struct {
-            fn lessThan(_: void, a: *slick.StackEntity, b: *slick.StackEntity) bool {
-                return a.sortY() < b.sortY();
+            for (entities.items) |entity| entity.handlePhysics(gui.mode, settings.controls);
+            camera.update(rl.getFrameTime());
+
+            // kept so we know we can do this
+            // if (rl.isKeyDown(.z)) object_rotation -= speed;
+            // if (rl.isKeyDown(.x)) object_rotation += speed;
+
+            const time_value = rl.getTime();
+            rl.setShaderValue(scanlines_shader, time_loc, &time_value, .float);
+
+            // Sort using world Y coordinate
+            std.mem.sort(*slick.StackEntity, entities.items, {}, struct {
+                fn lessThan(_: void, a: *slick.StackEntity, b: *slick.StackEntity) bool {
+                    return a.sortY() < b.sortY();
+                }
+            }.lessThan);
+
+            // there's has to be a better way than passing object_rotation to every render call
+            for (entities.items) |entity| {
+                const screen_pos = rl.getWorldToScreen2D(entity.position, entity.camera.camera);
+
+                // culling: don't render if outside the screen bounds
+                if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
+                    screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height) entity.render();
             }
-        }.lessThan);
 
-        // there's has to be a better way than passing object_rotation to every render call
-        for (entities.items) |entity| {
-            const screen_pos = rl.getWorldToScreen2D(entity.position, entity.camera.camera);
-
-            // culling: don't render if outside the screen bounds
-            if (screen_pos.x > -100 and screen_pos.x < internal_width + @as(f32, @floatFromInt(entity.stack.textures[0].width)) and
-                screen_pos.y > -100 and screen_pos.y < internal_height + @as(f32, @floatFromInt(entity.stack.textures[0].height)) + entity.stack.stack_height) entity.render();
-        }
-
-        renderHealth(textures_hud.items, player1.max_health, player1.health);
-        if (game_mode == .PAUSED) {
-            rl.drawRectangle(0, 0, rl.getScreenWidth(), rl.getScreenHeight(), rl.Color.init(0, 0, 0, 90));
-            rl.drawText("PAUSED", 32, 32, 16, rl.Color.white);
+            renderHealth(textures_hud.items, player1.max_health, player1.health);
+            gui.renderPaused();
         }
         rl.endTextureMode();
 

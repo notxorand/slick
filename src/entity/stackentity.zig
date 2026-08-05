@@ -6,7 +6,8 @@ const Camera = @import("../camera.zig");
 const Control = @import("../component/control.zig");
 const FloorZ = @import("../component/physics/floorz.zig");
 const SpriteStack = @import("../component/spritestack.zig");
-const GameMode = @import("../menu.zig").GameMode;
+const Controls = @import("../controls.zig");
+const GameMode = @import("../gui.zig").GameMode;
 
 const StackEntity = @This();
 
@@ -36,8 +37,8 @@ pub fn render(self: StackEntity) void {
     _ = self.stack.render(position.x, position.y, -(self.rotation - self.camera.camera.rotation), self.camera.camera.zoom);
 }
 
-pub fn handlePhysics(self: *StackEntity, mode: GameMode) void {
-    if (self.is_local and mode == .PLAYING) self.control.handle();
+pub fn handlePhysics(self: *StackEntity, mode: GameMode, input: Controls) void {
+    if (self.is_local and mode == .PLAYING) self.control.handle(input);
     const dx = self.control.position.x - self.position.x;
     const dy = self.control.position.y - self.position.y;
     self.floorz.calculateRotation(dx, dy, &self.rotation);

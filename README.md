@@ -14,11 +14,13 @@ tasks
 
 controls
 
-+ Move -            `WASD`            | `Left stick`
-+ Rotate camera -   `QE`              | `L1R1`
-+ Drift -           `Space`           | `L2`
-+ Aim -             `KL`, `Mouse`     | `Right stick`
-+ Fire artillery -  `I`, `Mouse left` | `R2`
-+ Speed boost -     `Shift`, `O`      | `A`, `Cross`
-+ Artillery boost - `J`               | `X`, `Square`
-+ Pause -           `Esc`             | `Start`, `Options`
+| Action          | Keyboard          | Gamepad            |
+| :---            | :---              | :---               |
+| Move            | `WASD`            | Left Stick         |
+| Rotate camera   | `QE`              | `L1`, `R1`         |
+| Drift           | `Space`           | `L2`               |
+| Aim             | `KL`, `Mouse`     | Right Stick        |
+| Fire artillery  | `I`, `Mouse Left` | `R2`               |
+| Speed boost     | `Shift`, `O`      | `A`, `Cross`       |
+| Artillery boost | `J`               | `X`, `Square`      |
+| Pause           | `Esc`             | `Start`, `Options` |

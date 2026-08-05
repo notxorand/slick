@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const Controls = @import("controls.zig");
+
 const Settings = @This();
 
 const FILE_NAME = "settings";
@@ -7,6 +9,7 @@ const FILE_NAME = "settings";
 allocator: std.mem.Allocator,
 io: std.Io,
 settings: SettingsData = .{},
+controls: Controls = .{},
 
 const SettingsData = struct {
     crt_enabled: bool = true,
@@ -39,6 +42,7 @@ pub fn load(self: *Settings) !void {
     self.settings.window_resizable = parsed.window_resizable;
     self.settings.fullscreen = parsed.fullscreen;
     self.settings.player_name = try self.allocator.dupe(u8, parsed.player_name);
+    try self.controls.load(self.allocator, self.io);
 }
 
 pub fn save(self: *Settings) !void {
@@ -52,4 +56,5 @@ pub fn save(self: *Settings) !void {
     try std.zon.stringify.serialize(self.settings, .{}, &writer.interface);
 
     try writer.interface.flush();
+    try self.controls.save(self.io);
 }
