@@ -25,7 +25,7 @@ pub fn setLocal(self: *Player, is_local: bool) void {
     self.stack_entity.is_local = is_local;
 }
 
-pub fn setActiveGamepad(self: *Player) void {
+pub fn setActiveGamepad(self: *Player) i32 {
     var active_gamepad: i32 = -1;
     for (0..4) |i| {
         if (rl.isGamepadAvailable(@intCast(i))) {
@@ -40,4 +40,5 @@ pub fn setActiveGamepad(self: *Player) void {
         }
     }
     self.stack_entity.control.setActiveGamepad(active_gamepad);
+    return active_gamepad;
 }

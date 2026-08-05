@@ -55,17 +55,27 @@ pub fn handle(self: *Control) void {
     // Calculate movement vector
     var move_vec = rl.Vector2{ .x = 0, .y = 0 };
 
-    if (rl.isKeyDown(.w) or gamepad_left_y < -deadzone or dpad_up) move_vec.y += 1;
-    if (rl.isKeyDown(.s) or gamepad_left_y > deadzone or dpad_down) move_vec.y -= 1;
-    if (rl.isKeyDown(.a) or gamepad_left_x < -deadzone or dpad_left) move_vec.x -= 1;
-    if (rl.isKeyDown(.d) or gamepad_left_x > deadzone or dpad_right) move_vec.x += 1;
+    if (active_gamepad != -1) {
+        move_vec.x = gamepad_left_x;
+        move_vec.y = -gamepad_left_y;
+    }
 
-    // Normalize and apply speed
+    if (rl.isKeyDown(.w) or dpad_up) move_vec.y = 1.0;
+    if (rl.isKeyDown(.s) or dpad_down) move_vec.y = -1.0;
+    if (rl.isKeyDown(.a) or dpad_left) move_vec.x = -1.0;
+    if (rl.isKeyDown(.d) or dpad_right) move_vec.x = 1.0;
+
+    // Apply deadzone and normalize
     const length = @sqrt(move_vec.x * move_vec.x + move_vec.y * move_vec.y);
-    if (length > 0) {
-        move_vec.x /= length;
-        move_vec.y /= length;
+    if (length < deadzone) {
+        move_vec = rl.Vector2{ .x = 0, .y = 0 };
+    } else {
+        const speed_multiplier = @min(length, 1.0);
+        move_vec.x = (move_vec.x / length) * speed_multiplier;
+        move_vec.y = (move_vec.y / length) * speed_multiplier;
+    }
 
+    if (length > 0) {
         // Rotate move_vec by camera angle
         const final_move_x = (move_vec.x * right.x) + (move_vec.y * forward.x);
         const final_move_y = (move_vec.x * right.y) + (move_vec.y * forward.y);

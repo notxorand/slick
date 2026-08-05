@@ -61,13 +61,15 @@ pub fn main(init: std.process.Init) !void {
     var stack_entity2 = slick.StackEntity.init(30, 0, 0, textures.items, &camera);
     var player1 = slick.Player.init(0, 32, 32, object_rotation, textures2.items, &camera);
     player1.setLocal(true);
-    player1.setActiveGamepad();
+    const active_gamepad = player1.setActiveGamepad();
 
     try players.append(allocator, &player1);
     try entities.append(allocator, &stack_entity);
     try entities.append(allocator, &stack_entity2);
     try entities.append(allocator, &player1.stack_entity);
     for (players.items) |player| if (player.stack_entity.is_local) camera.setTarget(&player.stack_entity.position);
+
+    var game_mode: slick.Menu.GameMode = .PLAYING;
 
     while (!rl.windowShouldClose()) {
         if (rl.isKeyPressed(.f11)) {
@@ -79,8 +81,10 @@ pub fn main(init: std.process.Init) !void {
             settings.settings.crt_enabled = !settings.settings.crt_enabled;
             try settings.save();
         }
+        if (rl.isKeyPressed(.escape) or (active_gamepad != -1 and rl.isGamepadButtonPressed(active_gamepad, .middle_right)))
+            game_mode = if (game_mode == .PLAYING) .PAUSED else .PLAYING;
 
-        for (entities.items) |entity| entity.handlePhysics();
+        for (entities.items) |entity| entity.handlePhysics(game_mode);
         camera.update(rl.getFrameTime());
 
         // kept so we know we can do this
@@ -113,6 +117,10 @@ pub fn main(init: std.process.Init) !void {
         }
 
         renderHealth(textures_hud.items, player1.max_health, player1.health);
+        if (game_mode == .PAUSED) {
+            rl.drawRectangle(0, 0, rl.getScreenWidth(), rl.getScreenHeight(), rl.Color.init(0, 0, 0, 90));
+            rl.drawText("PAUSED", 32, 32, 16, rl.Color.white);
+        }
         rl.endTextureMode();
 
         rl.clearBackground(rl.Color.black);
