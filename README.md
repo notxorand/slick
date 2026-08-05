@@ -11,3 +11,14 @@ tasks
 + [x] map out settings config
 + [ ] set up menus and settings
 + [ ] design arenas and grid maps
+
+controls
+
++ Move -            `WASD`            | `Left stick`
++ Rotate camera -   `QE`              | `L1R1`
++ Drift -           `Space`           | `L2`
++ Aim -             `KL`, `Mouse`     | `Right stick`
++ Fire artillery -  `I`, `Mouse left` | `R2`
++ Speed boost -     `Shift`, `O`      | `A`, `Cross`
++ Artillery boost - `J`               | `X`, `Square`
++ Pause -           `Esc`             | `Start`, `Options`
