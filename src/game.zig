@@ -70,6 +70,8 @@ pub fn main(init: std.process.Init) !void {
     try entities.append(allocator, &player1.stack_entity);
     for (players.items) |player| if (player.stack_entity.is_local) camera.setTarget(&player.stack_entity.position);
 
+    var volume_adjusted: f32 = 0;
+
     var gui = slick.Gui{};
 
     while (!rl.windowShouldClose()) {
@@ -82,6 +84,17 @@ pub fn main(init: std.process.Init) !void {
             settings.settings.crt_enabled = !settings.settings.crt_enabled;
             try settings.save();
         }
+        if (rl.isKeyPressed(.minus)) {
+            if (settings.settings.volume > 0) settings.settings.volume -= 10;
+            try settings.save();
+            volume_adjusted = 60 * 1.5;
+        }
+        if (rl.isKeyPressed(.equal)) {
+            if (settings.settings.volume < 100) settings.settings.volume += 10;
+            try settings.save();
+            volume_adjusted = 60 * 1.5;
+        }
+
         rl.beginDrawing();
         defer rl.endDrawing();
 
@@ -120,6 +133,11 @@ pub fn main(init: std.process.Init) !void {
             }
 
             renderHealth(textures_hud.items, player1.max_health, player1.health);
+
+            if (volume_adjusted > 0) {
+                volume_adjusted -= 1;
+                renderVolume(textures_hud.items, settings.settings.volume);
+            }
             gui.renderPaused();
         }
         rl.endTextureMode();
@@ -239,5 +257,11 @@ fn renderHealth(textures: []rl.Texture2D, total_health: u32, health: u32) void {
     }
     for (0..health) |i| {
         textures[0].draw(1240 - @as(i32, @intCast(i)) * 14, 680, .white);
+    }
+}
+
+fn renderVolume(textures: []rl.Texture2D, volume: u32) void {
+    for (0..@intCast(volume / 10)) |i| {
+        textures[2].draw(1240, 132 - @as(i32, @intCast(i)) * @as(i32, @intCast(textures[2].height - 2)), .white);
     }
 }

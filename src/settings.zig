@@ -19,6 +19,7 @@ const SettingsData = struct {
     fullscreen: bool = false,
     // TODO: randomise with mixture of a dictionary of words and numbers
     player_name: []const u8 = "noob",
+    volume: u32 = 60,
 };
 
 pub fn load(self: *Settings) !void {
