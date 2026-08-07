@@ -261,6 +261,9 @@ fn renderHealth(textures: []rl.Texture2D, total_health: u32, health: u32) void {
 }
 
 fn renderVolume(textures: []rl.Texture2D, volume: u32) void {
+    for (0..10) |i| {
+        textures[3].draw(1240, 132 - @as(i32, @intCast(i)) * @as(i32, @intCast(textures[3].height - 2)), .white);
+    }
     for (0..@intCast(volume / 10)) |i| {
         textures[2].draw(1240, 132 - @as(i32, @intCast(i)) * @as(i32, @intCast(textures[2].height - 2)), .white);
     }

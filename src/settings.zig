@@ -43,6 +43,7 @@ pub fn load(self: *Settings) !void {
     self.settings.window_resizable = parsed.window_resizable;
     self.settings.fullscreen = parsed.fullscreen;
     self.settings.player_name = try self.allocator.dupe(u8, parsed.player_name);
+    self.settings.volume = parsed.volume;
     try self.controls.load(self.allocator, self.io);
 }
 
