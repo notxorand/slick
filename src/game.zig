@@ -100,10 +100,22 @@ pub fn main(init: std.process.Init) !void {
 
         rl.beginTextureMode(target);
         rl.clearBackground(rl.Color.init(128, 128, 128, 255));
+        const is_shift_down = rl.isKeyDown(.left_shift) or rl.isKeyDown(.right_shift);
+        if (is_shift_down) {
+            if (rl.isKeyPressed(.escape)) settings.settings.dev_mode = !settings.settings.dev_mode;
+        }
+        if (settings.settings.dev_mode) {
+            rl.drawFPS(32, 32);
+            rl.drawText("Developer Mode", 32, 64, 16, .green);
+            rl.drawText("Position:", 32, 80, 16, .green);
+            const player_position = try std.fmt.allocPrintSentinel(allocator, "X: {}\nY: {}\nZ: {}", .{ player1.stack_entity.position.x, player1.stack_entity.position.y, 0 }, 0);
+            defer allocator.free(player_position);
+            rl.drawText(player_position, 32, 96, 16, .green);
+        }
         if (gui.mode == .MENU) {
             gui.renderMenu(active_gamepad);
         } else {
-            if (rl.isKeyPressed(.escape) or (active_gamepad != -1 and rl.isGamepadButtonPressed(active_gamepad, .middle_right)))
+            if ((rl.isKeyPressed(.escape) and !is_shift_down) or (active_gamepad != -1 and rl.isGamepadButtonPressed(active_gamepad, .middle_right)))
                 gui.mode = if (gui.mode == .PLAYING) .PAUSED else .PLAYING;
 
             for (entities.items) |entity| entity.handlePhysics(gui.mode, settings.controls);

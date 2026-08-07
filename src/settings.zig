@@ -20,6 +20,7 @@ const SettingsData = struct {
     // TODO: randomise with mixture of a dictionary of words and numbers
     player_name: []const u8 = "noob",
     volume: u32 = 60,
+    dev_mode: bool = false,
 };
 
 pub fn load(self: *Settings) !void {
@@ -44,6 +45,7 @@ pub fn load(self: *Settings) !void {
     self.settings.fullscreen = parsed.fullscreen;
     self.settings.player_name = try self.allocator.dupe(u8, parsed.player_name);
     self.settings.volume = parsed.volume;
+    self.settings.dev_mode = parsed.dev_mode;
     try self.controls.load(self.allocator, self.io);
 }
 
